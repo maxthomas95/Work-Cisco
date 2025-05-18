@@ -16,6 +16,7 @@ tenant_id = os.getenv('AZURE_TENANT_ID')
 client_id = os.getenv('AZURE_CLIENT_ID')
 client_secret = os.getenv('AZURE_CLIENT_SECRET')
 key_vault_name = os.getenv('AZURE_KEY_VAULT')
+meraki_secret_name = os.getenv('MERAKI_SECRET_NAME')
 
 # Set up the Key Vault client
 kv_uri = f"https://{key_vault_name}.vault.azure.net"
@@ -24,16 +25,15 @@ kv_uri = f"https://{key_vault_name}.vault.azure.net"
 credential = ClientSecretCredential(tenant_id, client_id, client_secret)
 client = SecretClient(vault_url=kv_uri, credential=credential)
 
-# Retrieve the secret
-secret_name = "Meraki-API"
-API_KEY = client.get_secret(secret_name).value
+# Retrieve the secret using configured name
+API_KEY = client.get_secret(meraki_secret_name).value
 
 # Initialize the Meraki API session
 dashboard = meraki.DashboardAPI(API_KEY, suppress_logging=True)
 
 # Get a list of all networks
 try:
-    networks = dashboard.organizations.getOrganizationNetworks(organizationId='')
+    networks = dashboard.organizations.getOrganizationNetworks(organizationId=organization_id)
 except Exception as e:
     print(f"Error fetching network data: {e}")
     networks = []  # Initialize an empty list to avoid issues in the loop
