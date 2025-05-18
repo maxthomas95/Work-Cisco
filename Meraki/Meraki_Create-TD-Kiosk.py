@@ -1,44 +1,50 @@
 import os
 import meraki
-
 from dotenv import load_dotenv
 from azure.identity import ClientSecretCredential
 from azure.keyvault.secrets import SecretClient
 
-# Construct the path to the .env file
+# ========================================
+# Load secrets from .env
+# ========================================
 env_path = os.path.join(os.path.dirname(__file__), '../../.env')
 print(f"Loading .env file from: {env_path}")
-
-# Load environment variables from .env file
 load_dotenv(dotenv_path=env_path)
 
+organization_id = os.getenv('ORGANIZATION_ID')
 tenant_id = os.getenv('AZURE_TENANT_ID')
 client_id = os.getenv('AZURE_CLIENT_ID')
 client_secret = os.getenv('AZURE_CLIENT_SECRET')
+key_vault_name = os.getenv('AZURE_KEY_VAULT')
+meraki_secret_name = os.getenv('MERAKI_SECRET_NAME')
 
-# Set up the Key Vault client
+# ========================================
+# Authenticate to Azure Key Vault
+# ========================================
 kv_uri = f"https://{key_vault_name}.vault.azure.net"
-
-# Authenticate using ClientSecretCredential
 credential = ClientSecretCredential(tenant_id, client_id, client_secret)
 client = SecretClient(vault_url=kv_uri, credential=credential)
+API_KEY = client.get_secret(meraki_secret_name).value
 
-# Retrieve the secret
-API_KEY = client.get_secret(secret_name).value
-
-# Initialize the Meraki Dashboard API
+# ========================================
+# Connect to Meraki Dashboard API
+# ========================================
 dashboard = meraki.DashboardAPI(API_KEY, suppress_logging=True)
 
-# Define the network ID
-network_id = 'L_611363649415550343'
+# ========================================
+# Network Configuration
+# ========================================
+network_id = 'L_xxxx'  # TODO: Update with target network ID
 
-# Define ACL rules
+# ========================================
+# ACL Rules Configuration
+# ========================================
 new_acl_rules = [
     {
         'comment': 'Service1',
         'policy': 'allow',
         'protocol': 'udp',
-        'srcCidr': 'x.x.x.x/32, x.x.x.x/32',
+        'srcCidr': 'x.x.x.x/32, x.x.x.x/32',  # TODO: Update source CIDRs
         'srcPort': '67,68',
         'destCidr': 'any',
         'destPort': '67,68'
@@ -105,21 +111,25 @@ except Exception as e:
     print(f"Error updating ACL rules: {e}")
 
 
-# Define VLAN
+# ========================================
+# VLAN Configuration
+# ========================================
 vlan = {
-    'id': xxx,
-    'name': 'VLAN_NAME',
-    'subnet': '10.xxx.xxx.0/24',
-    'applianceIp': '10.xxx.xxx.1',
-    'dhcpHandling': 'Relay DHCP to another server',
-    'dhcpRelayServerIps': ['10.xxx.xxx.1', '10.xxx.xxx.2'],
+    'id': xxx,  # TODO: Set VLAN ID
+    'name': 'VLAN_NAME',  # TODO: Set VLAN name
+    'subnet': '10.xxx.xxx.0/24',  # TODO: Set subnet
+    'applianceIp': '10.xxx.xxx.1',  # TODO: Set appliance IP
+    'dhcpHandling': 'Relay DHCP to another server', # TODO: Change if needed
+    'dhcpRelayServerIps': ['10.xxx.xxx.1', '10.xxx.xxx.2'],  # TODO: Set DHCP relay IPs
 }
 
 try:
-    # Add VLAN
+    print(f"Creating VLAN {vlan['id']} on network {network_id}")
     response = dashboard.appliance.createNetworkApplianceVlan(
         network_id, **vlan
     )
-    print(response)
+    print(f"Successfully created VLAN {vlan['id']}")
+    print(f"VLAN details: {response}")
 except Exception as e:
-    print(f"Error creating VLAN: {e}")
+    print(f"[ERROR] Failed to create VLAN {vlan['id']}: {e}")
+    raise

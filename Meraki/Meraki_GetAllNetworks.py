@@ -1,94 +1,114 @@
-import meraki
+import os
 import csv
+import meraki
 from dotenv import load_dotenv
 from azure.identity import ClientSecretCredential
 from azure.keyvault.secrets import SecretClient
-import os
 
-# Construct the path to the .env file
+# ========================================
+# Load secrets from .env
+# ========================================
 env_path = os.path.join(os.path.dirname(__file__), '../../.env')
 print(f"Loading .env file from: {env_path}")
-
-# Load environment variables from .env file
 load_dotenv(dotenv_path=env_path)
 
+organization_id = os.getenv('ORGANIZATION_ID')
 tenant_id = os.getenv('AZURE_TENANT_ID')
 client_id = os.getenv('AZURE_CLIENT_ID')
 client_secret = os.getenv('AZURE_CLIENT_SECRET')
+key_vault_name = os.getenv('AZURE_KEY_VAULT')
+meraki_secret_name = os.getenv('MERAKI_SECRET_NAME')
 
-organization_id = os.getenv('ORGANIZATION_ID')
-
-# Set up the Key Vault client
+# ========================================
+# Authenticate to Azure Key Vault
+# ========================================
 kv_uri = f"https://{key_vault_name}.vault.azure.net"
-
-# Authenticate using ClientSecretCredential
 credential = ClientSecretCredential(tenant_id, client_id, client_secret)
 client = SecretClient(vault_url=kv_uri, credential=credential)
+API_KEY = client.get_secret(meraki_secret_name).value
 
-# Retrieve the secret
-API_KEY = client.get_secret(secret_name).value
-
-# Initialize the Meraki API session
+# ========================================
+# Connect to Meraki Dashboard API
+# ========================================
 dashboard = meraki.DashboardAPI(API_KEY, suppress_logging=True)
 
-# Get all devices in the organization
-devices = dashboard.organizations.getOrganizationDevices(organization_id)
-
-# Filter devices to only include MX models
-mx_devices = [device for device in devices if device['model'].startswith('MX')]
-
-# Get network names and second octet for each device
-for device in mx_devices:
-    if 'networkId' in device:
-        network = dashboard.networks.getNetwork(device['networkId'])
-        device['networkName'] = network['name']
-    else:
-        device['networkName'] = 'N/A'
+# ========================================
+# Get MX Devices and Network Info
+# ========================================
+try:
+    print(f"Getting all devices for organization {organization_id}")
+    devices = dashboard.organizations.getOrganizationDevices(organization_id)
     
-    # Extract the second octet from the VLAN IP address
-    if 'networkId' in device:
+    # Filter to MX devices only
+    mx_devices = [device for device in devices if device.get('model', '').startswith('MX')]
+    print(f"Found {len(mx_devices)} MX devices")
+
+    # Get network names and second octet for each device
+    for device in mx_devices:
         try:
-            vlan_id = '100'  # Replace with the actual VLAN ID if needed
-            response = dashboard.appliance.getNetworkApplianceVlan(device['networkId'], vlan_id)
-            appliance_ip = response['applianceIp']
-            ip_parts = appliance_ip.split('.')
-            if len(ip_parts) >= 2:
-                device['secondOctet'] = int(ip_parts[1])  # Convert to integer for proper sorting
+            if 'networkId' in device:
+                network = dashboard.networks.getNetwork(device['networkId'])
+                device['networkName'] = network['name']
             else:
-                device['secondOctet'] = -1  # Use -1 for invalid octets to sort them at the end
+                device['networkName'] = 'N/A'
+            
+            # Extract second octet from VLAN IP
+            if 'networkId' in device:
+                vlan_id = '100'  # TODO: Set target VLAN ID if different
+                response = dashboard.appliance.getNetworkApplianceVlan(device['networkId'], vlan_id)
+                appliance_ip = response['applianceIp']
+                ip_parts = appliance_ip.split('.')
+                device['secondOctet'] = int(ip_parts[1]) if len(ip_parts) >= 2 else -1
+            else:
+                device['secondOctet'] = -1
+                
         except Exception as e:
-            print(f"Error retrieving VLAN for device {device['serial']}: {e}")
-            device['secondOctet'] = -1  # Use -1 for errors to sort them at the end
-    else:
-        device['secondOctet'] = -1  # Use -1 for missing networkId to sort them at the end
+            print(f"[WARNING] Error processing device {device.get('serial', 'unknown')}: {e}")
+            device['secondOctet'] = -1
+            continue
+            
+except Exception as e:
+    print(f"[ERROR] Failed to get device information: {e}")
+    raise
 
-# Write devices information to a CSV file without duplicate network names and sorted by Second Octet
-def write_to_csv(devices, folder_path='Python_Scripts/Meraki/Output'):
-    seen_network_names = set()
-    unique_devices = []
-    
-    for device in devices:
-        if device['networkName'] not in seen_network_names:
-            unique_devices.append(device)
-            seen_network_names.add(device['networkName'])
-    
-    # Sort devices by Second Octet (numerically)
-    unique_devices.sort(key=lambda x: x['secondOctet'])
-    
-    # Ensure the folder path exists
-    os.makedirs(folder_path, exist_ok=True)
-    
-    # Define the CSV file name and path
-    csv_file_name = 'mx_devices.csv'
-    csv_file_path = os.path.join(folder_path, csv_file_name)
-    
-    with open(csv_file_path, mode='w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(['Network Name', 'Network ID', 'Second Octet'])
-        for device in unique_devices:
-            writer.writerow([device['networkName'], device.get('networkId', ''), device['secondOctet']])
+# ========================================
+# CSV Output Configuration
+# ========================================
+def write_to_csv(devices):
+    try:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        output_dir = os.path.join(script_dir, 'Output')
+        os.makedirs(output_dir, exist_ok=True)
+        csv_path = os.path.join(output_dir, 'mx_devices.csv')
+        
+        seen_networks = set()
+        unique_devices = []
+        
+        for device in devices:
+            if device['networkName'] not in seen_networks:
+                unique_devices.append(device)
+                seen_networks.add(device['networkName'])
+        
+        unique_devices.sort(key=lambda x: x['secondOctet'])
+        
+        with open(csv_path, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(['Network Name', 'Network ID', 'Second Octet'])
+            for device in unique_devices:
+                writer.writerow([
+                    device['networkName'],
+                    device.get('networkId', ''),
+                    device['secondOctet']
+                ])
+        
+        print(f"\nSuccessfully wrote {len(unique_devices)} unique networks to {csv_path}")
+        
+    except Exception as e:
+        print(f"[ERROR] Failed to write CSV: {e}")
+        raise
 
-# Write MX devices to CSV
-write_to_csv(mx_devices)
-
-print(f"MX devices information with unique network names and second octet has been successfully written to Python_Scripts/Meraki/Output/mx_devices.csv")
+# ========================================
+# Main Execution
+# ========================================
+if __name__ == '__main__':
+    write_to_csv(mx_devices)

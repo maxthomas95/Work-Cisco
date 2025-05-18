@@ -1,77 +1,99 @@
-import meraki
+import os
 import csv
-
+import meraki
 from dotenv import load_dotenv
 from azure.identity import ClientSecretCredential
 from azure.keyvault.secrets import SecretClient
-import os
 
-# Construct the path to the .env file
+# ========================================
+# Load secrets from .env
+# ========================================
 env_path = os.path.join(os.path.dirname(__file__), '../../.env')
 print(f"Loading .env file from: {env_path}")
-
-# Load environment variables from .env file
 load_dotenv(dotenv_path=env_path)
 
+organization_id = os.getenv('ORGANIZATION_ID')
 tenant_id = os.getenv('AZURE_TENANT_ID')
 client_id = os.getenv('AZURE_CLIENT_ID')
 client_secret = os.getenv('AZURE_CLIENT_SECRET')
+key_vault_name = os.getenv('AZURE_KEY_VAULT')
+meraki_secret_name = os.getenv('MERAKI_SECRET_NAME')
 
-# Set up the Key Vault client
+# ========================================
+# Authenticate to Azure Key Vault
+# ========================================
 kv_uri = f"https://{key_vault_name}.vault.azure.net"
-
-# Authenticate using ClientSecretCredential
 credential = ClientSecretCredential(tenant_id, client_id, client_secret)
 client = SecretClient(vault_url=kv_uri, credential=credential)
+API_KEY = client.get_secret(meraki_secret_name).value
 
-# Retrieve the secret
-API_KEY = client.get_secret(secret_name).value
-
-# Initialize the Meraki API session
+# ========================================
+# Connect to Meraki Dashboard API
+# ========================================
 dashboard = meraki.DashboardAPI(API_KEY, suppress_logging=True)
 
-# Function to find client devices with a specific IP and save to CSV
+# ========================================
+# IP Search Function
+# ========================================
 def find_client_ips(api_key, csv_file, target_ip):
     try:
-        # Open CSV file for writing
+        print(f"Starting IP search for: {target_ip}")
+        
         with open(csv_file, mode='w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(['Network Name', 'Client Description', 'Client MAC', 'Client IP', 'Device Name', 'Device Model'])
 
-            # Get the list of organizations
-            organizations = dashboard.organizations.getOrganizations()
-            print(f"Found {len(organizations)} organizations.")
+            # Get organization networks
+            networks = dashboard.organizations.getOrganizationNetworks(organization_id)
+            print(f"Searching {len(networks)} networks in organization {organization_id}")
             
-            for org in organizations:
-                org_id = org['id']
+            for network in networks:
+                network_id = network['id']
+                network_name = network['name']
                 
-                # Get the list of networks in the organization
-                networks = dashboard.organizations.getOrganizationNetworks(org_id)
-                print(f"Found {len(networks)} networks in organization {org_id}.")
-                
-                for network in networks:
-                    network_id = network['id']
-                    network_name = network['name']
-                    
-                    # Get the list of clients in the network
-                    clients = dashboard.networks.getNetworkClients(network_id, timespan=604800)  # Last 7 days
-                    print(f"Found {len(clients)} clients in network {network_name}.")
+                try:
+                    clients = dashboard.networks.getNetworkClients(
+                        network_id, 
+                        timespan=604800,  # Last 7 days
+                        perPage=1000,
+                        total_pages='all'
+                    )
+                    print(f"Checking {len(clients)} clients in {network_name}")
                     
                     for client in clients:
-                        # Check if the client IP matches the target IP
                         client_ip = client.get('ip') or client.get('recentDeviceIp')
                         if client_ip == target_ip:
                             device_serial = client.get('recentDeviceSerial')
                             if device_serial:
                                 device = dashboard.devices.getDevice(device_serial)
-                                writer.writerow([network_name, client.get('description', 'N/A'), client['mac'], client_ip, device['name'], device['model']])
-                                print(f"Found client with IP {target_ip}: {client_ip} on device {device['name']} in network {network_name}")
+                                writer.writerow([
+                                    network_name,
+                                    client.get('description', 'N/A'),
+                                    client['mac'],
+                                    client_ip,
+                                    device['name'],
+                                    device['model']
+                                ])
+                                print(f"Match found: {client_ip} on {device['name']} in {network_name}")
                             else:
-                                print(f"Client with IP {target_ip} found, but no device serial: {client_ip}")
+                                print(f"Match found (no device): {client_ip} in {network_name}")
+                except Exception as e:
+                    print(f"[WARNING] Error processing network {network_name}: {e}")
+                    continue
+                    
+        print(f"Search completed. Results saved to {csv_file}")
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"[ERROR] IP search failed: {e}")
+        raise
 
-# Example usage: Find client devices with a specific IP and save to CSV
-target_ip = '192.168.128.6'  # Replace with the IP address you want to search for
-CSV_FILE = 'found_ips.csv'
-find_client_ips(API_KEY, CSV_FILE, target_ip)
+# ========================================
+# Main Execution
+# ========================================
+if __name__ == '__main__':
+    target_ip = '192.168.128.6'  # TODO: Set target IP to search for
+    CSV_FILE = 'found_ips.csv'  # TODO: Set output CSV path if needed
+    
+    try:
+        find_client_ips(API_KEY, CSV_FILE, target_ip)
+    except Exception as e:
+        print(f"[ERROR] Script execution failed: {e}")

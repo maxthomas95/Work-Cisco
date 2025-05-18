@@ -26,6 +26,7 @@ email_user = os.getenv('EMAIL_USER')
 email_recipient = os.getenv('EMAIL_RECIPIENT')
 key_vault_name = os.getenv('AZURE_KEY_VAULT')
 organization_id = os.getenv('ORGANIZATION_ID')
+meraki_secret_name = os.getenv('MERAKI_SECRET_NAME')
 
 # ========================================
 # Connect to Azure Key Vault & get Meraki API key
@@ -33,7 +34,7 @@ organization_id = os.getenv('ORGANIZATION_ID')
 kv_uri = f"https://{key_vault_name}.vault.azure.net"
 credential = ClientSecretCredential(tenant_id, client_id, client_secret)
 client = SecretClient(vault_url=kv_uri, credential=credential)
-API_KEY = client.get_secret("Meraki-API").value
+API_KEY = client.get_secret(meraki_secret_name).value  # TODO: Ensure meraki_secret_name is set in .env
 
 # ========================================
 # Initialize Meraki API Client
