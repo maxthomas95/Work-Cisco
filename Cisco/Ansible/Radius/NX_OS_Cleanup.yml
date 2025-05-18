@@ -1,0 +1,44 @@
+---
+- name: Manage NX-OS local users
+  hosts: AAA_NXOS
+  gather_facts: no
+  connection: network_cli
+
+  vars:
+    ansible_user: "{{ vault_ansible_user }}"
+    ansible_password: "{{ vault_ansible_password }}"
+    new_user: "{{ vault_admin_user }}"
+    new_password: "{{ vault_admin_password }}"
+    new_role: network-admin
+
+  tasks:
+    - name: Create or update adminuser first
+      cisco.nxos.nxos_user:
+        name: "{{ new_user }}"
+        configured_password: "{{ new_password }}"
+        role: "{{ new_role }}"
+        state: present
+
+    - name: Get current users
+      cisco.nxos.nxos_command:
+        commands: "show running-config | include ^username"
+      register: user_output
+
+    - name: Show raw user lines
+      debug:
+        msg: "{{ user_output.stdout[0] }}"
+
+    - name: Extract current usernames
+      set_fact:
+        current_users: "{{ user_output.stdout[0] | regex_findall('^username\\s+(\\S+)', multiline=True) | unique }}"
+
+    - name: Debug current users list
+      debug:
+        var: current_users
+
+    - name: Remove all users except adminuser
+      cisco.nxos.nxos_user:
+        name: "{{ item }}"
+        state: absent
+      loop: "{{ current_users }}"
+      when: item not in ['adminuser', 'admin', 'ansible']

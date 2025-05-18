@@ -1,0 +1,20 @@
+---
+- name: Add SSH keys to known_hosts
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Scan and add SSH keys for all switches
+      command: "ssh-keyscan -H {{ item }}"
+      register: ssh_keys
+      with_items:
+        - "{{ groups['AAA_NXOS'] | map('extract', hostvars, 'ansible_host') | list }}"
+        - "{{ groups['AAA_IOSXE'] | map('extract', hostvars, 'ansible_host') | list }}"
+        - "{{ groups['BBB_NXOS'] | map('extract', hostvars, 'ansible_host') | list }}"
+        - "{{ groups['BBB_IOSXE'] | map('extract', hostvars, 'ansible_host') | list }}"
+
+    - name: Save SSH keys to known_hosts
+      lineinfile:
+        path: "~/.ssh/known_hosts"
+        line: "{{ item.stdout }}"
+        create: yes
+      with_items: "{{ ssh_keys.results }}"
