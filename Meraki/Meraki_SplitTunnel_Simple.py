@@ -1,39 +1,48 @@
+import os
 import meraki
-
 from dotenv import load_dotenv
 from azure.identity import ClientSecretCredential
 from azure.keyvault.secrets import SecretClient
-import os
 
-# Construct the path to the .env file
+# ========================================
+# Load secrets from .env
+# ========================================
 env_path = os.path.join(os.path.dirname(__file__), '../../.env')
 print(f"Loading .env file from: {env_path}")
-
-# Load environment variables from .env file
 load_dotenv(dotenv_path=env_path)
 
+organization_id = os.getenv('ORGANIZATION_ID')
 tenant_id = os.getenv('AZURE_TENANT_ID')
 client_id = os.getenv('AZURE_CLIENT_ID')
 client_secret = os.getenv('AZURE_CLIENT_SECRET')
 key_vault_name = os.getenv('AZURE_KEY_VAULT')
+meraki_secret_name = os.getenv('MERAKI_SECRET_NAME')
 
-# Set up the Key Vault client
+# ========================================
+# Authenticate to Azure Key Vault
+# ========================================
 kv_uri = f"https://{key_vault_name}.vault.azure.net"
-
-# Authenticate using ClientSecretCredential
 credential = ClientSecretCredential(tenant_id, client_id, client_secret)
 client = SecretClient(vault_url=kv_uri, credential=credential)
+API_KEY = client.get_secret(meraki_secret_name).value
 
-# Retrieve the secret
-secret_name = "Meraki-API"
-API_KEY = client.get_secret(secret_name).value
-
-# Initialize the Meraki API session
+# ========================================
+# Connect to Meraki Dashboard API
+# ========================================
 dashboard = meraki.DashboardAPI(API_KEY, suppress_logging=True)
 
-network_id = 'L_1111111111'  # Replace with your actual network ID
+# ========================================
+# Network Configuration
+# ========================================
+network_id = 'L_1111111111'  # TODO: Replace with actual network ID
+print(f"Configuring split tunnel for network: {network_id}")
 
-response = dashboard.appliance.updateNetworkApplianceTrafficShapingVpnExclusions(
+# ========================================
+# Apply split tunnel configuration
+# ========================================
+try:
+    print("Applying split tunnel configuration...")
+    response = dashboard.appliance.updateNetworkApplianceTrafficShapingVpnExclusions(
     network_id, 
     custom=[
 
@@ -208,4 +217,7 @@ response = dashboard.appliance.updateNetworkApplianceTrafficShapingVpnExclusions
         majorApplications=[]
 )
 
-print(response)
+    print(f"Configuration applied successfully: {response}")
+except Exception as e:
+    print(f"Error applying configuration: {e}")
+    raise

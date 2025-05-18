@@ -25,7 +25,7 @@ meraki_secret_name = os.getenv('MERAKI_SECRET_NAME')
 kv_uri = f"https://{key_vault_name}.vault.azure.net"
 credential = ClientSecretCredential(tenant_id, client_id, client_secret)
 client = SecretClient(vault_url=kv_uri, credential=credential)
-API_KEY = client.get_secret("Meraki-API").value
+API_KEY = client.get_secret(meraki_secret_name).value
 
 # ========================================
 # Connect to Meraki Dashboard API

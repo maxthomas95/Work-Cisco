@@ -1,44 +1,50 @@
+import os
 import meraki
-
 from dotenv import load_dotenv
 from azure.identity import ClientSecretCredential
 from azure.keyvault.secrets import SecretClient
-import os
 
-# Construct the path to the .env file
+# ========================================
+# Load secrets from .env
+# ========================================
 env_path = os.path.join(os.path.dirname(__file__), '../../.env')
 print(f"Loading .env file from: {env_path}")
-
-# Load environment variables from .env file
 load_dotenv(dotenv_path=env_path)
 
+organization_id = os.getenv('ORGANIZATION_ID')
 tenant_id = os.getenv('AZURE_TENANT_ID')
 client_id = os.getenv('AZURE_CLIENT_ID')
 client_secret = os.getenv('AZURE_CLIENT_SECRET')
 key_vault_name = os.getenv('AZURE_KEY_VAULT')
 meraki_secret_name = os.getenv('MERAKI_SECRET_NAME')
 
-# Set up the Key Vault client
+# ========================================
+# Authenticate to Azure Key Vault
+# ========================================
 kv_uri = f"https://{key_vault_name}.vault.azure.net"
-
-# Authenticate using ClientSecretCredential
 credential = ClientSecretCredential(tenant_id, client_id, client_secret)
 client = SecretClient(vault_url=kv_uri, credential=credential)
-
-# Retrieve the secret using configured name
 API_KEY = client.get_secret(meraki_secret_name).value
 
-# Initialize the Meraki API session
+# ========================================
+# Connect to Meraki Dashboard API
+# ========================================
 dashboard = meraki.DashboardAPI(API_KEY, suppress_logging=True)
 
-# Get a list of all networks
+# ========================================
+# Fetch all VPN networks from the org
+# ========================================
 try:
+    print("Fetching all organization networks...")
     networks = dashboard.organizations.getOrganizationNetworks(organizationId=organization_id)
+    print(f"Found {len(networks)} networks")
 except Exception as e:
     print(f"Error fetching network data: {e}")
-    networks = []  # Initialize an empty list to avoid issues in the loop
+    networks = []  # Initialize empty list to continue processing
 
-# Iterate through each network and apply the configuration if the name starts with 'VPN'
+# ========================================
+# Apply split tunnel config to VPN networks
+# ========================================
 for network in networks:
     if network['name'].startswith('VPN'):
         try:
