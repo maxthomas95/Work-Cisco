@@ -1,0 +1,69 @@
+---
+- name: Configure RADIUS on NX-OS devices
+  hosts: AAA_NXOS
+  gather_facts: no
+  connection: network_cli
+
+  vars:
+    ansible_user: "{{ vault_ansible_user }}"
+    ansible_password: "{{ vault_ansible_password }}"
+
+    radius_servers_add:
+      - { ip: "aaa.aaa.aaa.aaa", key: "{{ vault_radius_secret }}" }
+      - { ip: "bbb.bbb.bbb.bbb", key: "{{ vault_radius_secret }}" }
+
+    radius_servers_remove:
+      - "ccc.ccc.ccc.ccc"
+      - "ddd.ddd.ddd.ddd"
+
+    aaa_group_name: "NPS-Radius"
+    aaa_group_remove: "RADIUS-AUTH"
+    source_interface: "VlanFFF"
+
+  tasks:
+    - name: Add new RADIUS servers
+      cisco.nxos.nxos_config:
+        lines:
+          - "radius-server host {{ item.ip }} key {{ item.key }} authentication accounting"
+      loop: "{{ radius_servers_add }}"
+      when: radius_servers_add is defined
+
+    - name: Create AAA group server radius NPS-Radius
+      cisco.nxos.nxos_config:
+        lines:
+          - "server {{ item.ip }}"
+        parents: "aaa group server radius {{ aaa_group_name }}"
+      loop: "{{ radius_servers_add }}"
+      loop_control:
+        loop_var: item
+
+    - name: Set source-interface inside AAA group
+      cisco.nxos.nxos_config:
+        lines:
+          - "source-interface {{ source_interface }}"
+        parents: "aaa group server radius {{ aaa_group_name }}"
+
+    - name: Set AAA authentication and accounting to use new RADIUS group
+      cisco.nxos.nxos_config:
+        lines:
+          - "aaa authentication login default group {{ aaa_group_name }} local"
+          - "aaa accounting default group {{ aaa_group_name }}"
+
+    - name: Remove old AAA authentication and accounting bindings
+      cisco.nxos.nxos_config:
+        lines:
+          - "no aaa authentication login default group {{ aaa_group_remove }} local"
+          - "no aaa accounting default group {{ aaa_group_remove }}"
+
+    - name: Remove old RADIUS servers
+      cisco.nxos.nxos_config:
+        lines:
+          - "no radius-server host {{ item }}"
+      loop: "{{ radius_servers_remove }}"
+      when: radius_servers_remove is defined
+
+    - name: Remove old AAA group server radius RADIUS-AUTH
+      cisco.nxos.nxos_config:
+        lines:
+          - "no aaa group server radius {{ aaa_group_remove }}"
+      when: aaa_group_remove is defined

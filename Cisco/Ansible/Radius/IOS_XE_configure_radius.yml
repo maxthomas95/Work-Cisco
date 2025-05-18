@@ -1,0 +1,53 @@
+---
+- name: Configure RADIUS on Cisco 9300
+  hosts: AAA
+  gather_facts: no
+  connection: network_cli
+
+  vars:
+    ansible_user: "{{ vault_ansible_user }}"
+    ansible_password: "{{ vault_ansible_password }}"
+    radius_shared_secret: "{{ vault_radius_secret }}"
+
+  tasks:
+    - name: Enable password encryption
+      ios_config:
+        lines:
+          - service password-encryption
+        match: exact
+        replace: line
+
+    - name: Configure AAA-Radius server
+      ios_config:
+        lines:
+          - radius server AAA-Radius
+          - address ipv4 aaa.aaa.aaa.aaa auth-port 1812 acct-port 1813
+          - key {{ radius_shared_secret }}
+        match: exact
+        replace: line
+
+    - name: Configure BBB-Radius server
+      ios_config:
+        lines:
+          - radius server BBB-Radius
+          - address ipv4 bbb.bbb.bbb.bbb auth-port 1812 acct-port 1813
+          - key {{ radius_shared_secret }}
+        match: exact
+        replace: line
+
+    - name: Enable AAA and configure server group
+      ios_config:
+        lines:
+          - aaa group server radius NPS-Radius
+          - server name AAA-Radius
+          - server name BBB-Radius
+        match: exact
+        replace: line
+
+    - name: Configure login authentication
+      ios_config:
+        lines:
+          - aaa authentication login default group NPS-Radius local
+          - aaa authorization exec default group NPS-Radius local
+        match: exact
+        replace: line

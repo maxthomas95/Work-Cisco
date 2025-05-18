@@ -1,0 +1,51 @@
+---
+- name: Check NTP Servers on Cisco NX-OS and IOS-XE Devices
+  hosts: all
+  gather_facts: no
+  tasks:
+
+    - name: Debug ansible_network_os (for troubleshooting)
+      debug:
+        msg: "Device OS: {{ ansible_network_os }}"
+
+    - name: Gather NTP configuration (NX-OS)
+      cisco.nxos.nxos_command:
+        commands: "show run | include ntp"
+      register: ntp_nxos
+      when: ansible_network_os == "nxos"
+
+    - name: Gather NTP configuration (IOS-XE)
+      cisco.ios.ios_command:
+        commands: "show running-config | include ntp server"
+      register: ntp_ios
+      when: ansible_network_os == "ios"
+
+    - name: Extract and display NTP servers for NX-OS
+      debug:
+        msg: "NX-OS NTP Servers: {{ ntp_nxos.stdout_lines }}"
+      when: ansible_network_os == "nxos"
+
+    - name: Extract and display NTP servers for IOS-XE
+      debug:
+        msg: "IOS-XE NTP Servers: {{ ntp_ios.stdout_lines }}"
+      when: ansible_network_os == "ios"
+
+    - name: Compare NTP servers against expected list
+      set_fact:
+        expected_ntp_servers:
+          - "aaa.aaa.aaa.aaa"
+          - "bbb.bbb.bbb.bbb"
+
+    - name: Validate NX-OS NTP configuration
+      debug:
+        msg: "WARNING: NX-OS NTP servers do not match expected list!"
+      when: 
+        - ansible_network_os == "nxos"
+        - not expected_ntp_servers | difference(ntp_nxos.stdout_lines | join(' ') | split) | length == 0
+
+    - name: Validate IOS-XE NTP configuration
+      debug:
+        msg: "WARNING: IOS-XE NTP servers do not match expected list!"
+      when: 
+        - ansible_network_os == "ios"
+        - not expected_ntp_servers | difference(ntp_ios.stdout_lines | join(' ') | split) | length == 0

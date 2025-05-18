@@ -1,0 +1,38 @@
+---
+- name: Update BGP Prefix List on Nexus Core
+  hosts: AAA-CORES
+  gather_facts: no
+  connection: network_cli
+
+  tasks:
+    - name: Read VNet prefix from file
+      command: cat vnet_prefix.txt
+      register: vnet_prefix
+
+    - name: Check if prefix-list entry already exists
+      cisco.nxos.nxos_command:
+        commands: "show ip prefix-list eBGP-to-OSPF {{ vnet_prefix.stdout }}"
+      register: existing_prefix
+      ignore_errors: yes
+
+    - name: Debug - Show existing prefix list
+      debug:
+        var: existing_prefix.stdout_lines
+
+    - name: Ensure the prefix list exists (Only if not present)
+      cisco.nxos.nxos_config:
+        lines:
+          - "ip prefix-list eBGP-to-OSPF permit {{ vnet_prefix.stdout }}"
+      when: 
+        - existing_prefix.stdout_lines is defined
+        - "vnet_prefix.stdout not in existing_prefix.stdout_lines | join(' ')"
+
+    - name: Display change result
+      debug:
+        msg: >
+          {% if prefix_result is defined and prefix_result.changed %}
+            Prefix {{ vnet_prefix.stdout }} was added to eBGP-to-OSPF!
+          {% else %}
+            Prefix {{ vnet_prefix.stdout }} already exists, no changes made.
+          {% endif %}
+
