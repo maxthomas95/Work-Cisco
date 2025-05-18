@@ -12,11 +12,12 @@ env_path = os.path.join(os.path.dirname(__file__), '../../.env')
 print(f"Loading .env file from: {env_path}")
 load_dotenv(dotenv_path=env_path)
 
+organization_id = os.getenv('ORGANIZATION_ID')
 tenant_id = os.getenv('AZURE_TENANT_ID')
 client_id = os.getenv('AZURE_CLIENT_ID')
 client_secret = os.getenv('AZURE_CLIENT_SECRET')
 key_vault_name = os.getenv('AZURE_KEY_VAULT')
-organization_id = os.getenv('ORGANIZATION_ID')
+meraki_secret_name = os.getenv('MERAKI_SECRET_NAME')
 
 # ========================================
 # Authenticate to Azure Key Vault
@@ -24,9 +25,7 @@ organization_id = os.getenv('ORGANIZATION_ID')
 kv_uri = f"https://{key_vault_name}.vault.azure.net"
 credential = ClientSecretCredential(tenant_id, client_id, client_secret)
 client = SecretClient(vault_url=kv_uri, credential=credential)
-
-# Get Meraki API key securely from Key Vault
-API_KEY = client.get_secret("Meraki-API").value
+API_KEY = client.get_secret(meraki_secret_name).value
 
 # ========================================
 # Connect to Meraki Dashboard API
