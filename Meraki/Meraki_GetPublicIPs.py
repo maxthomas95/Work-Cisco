@@ -1,56 +1,71 @@
-import meraki
+import os
 import csv
-
+import meraki
 from dotenv import load_dotenv
 from azure.identity import ClientSecretCredential
 from azure.keyvault.secrets import SecretClient
-import os
 
-# Construct the path to the .env file
+# ========================================
+# Load secrets from .env
+# ========================================
 env_path = os.path.join(os.path.dirname(__file__), '../../.env')
 print(f"Loading .env file from: {env_path}")
-
-# Load environment variables from .env file
 load_dotenv(dotenv_path=env_path)
 
+organization_id = os.getenv('ORGANIZATION_ID')
 tenant_id = os.getenv('AZURE_TENANT_ID')
 client_id = os.getenv('AZURE_CLIENT_ID')
 client_secret = os.getenv('AZURE_CLIENT_SECRET')
+key_vault_name = os.getenv('AZURE_KEY_VAULT')
+meraki_secret_name = os.getenv('MERAKI_SECRET_NAME')
 
-organization_id = os.getenv('ORGANIZATION_ID')
-
-# Set up the Key Vault client
+# ========================================
+# Authenticate to Azure Key Vault
+# ========================================
 kv_uri = f"https://{key_vault_name}.vault.azure.net"
-
-# Authenticate using ClientSecretCredential
 credential = ClientSecretCredential(tenant_id, client_id, client_secret)
 client = SecretClient(vault_url=kv_uri, credential=credential)
+API_KEY = client.get_secret(meraki_secret_name).value
 
-# Retrieve the secret
-API_KEY = client.get_secret(secret_name).value
-
-# Initialize the Meraki API session
+# ========================================
+# Connect to Meraki Dashboard API
+# ========================================
 dashboard = meraki.DashboardAPI(API_KEY, suppress_logging=True)
 
 
-# Get all devices in the organization
-devices = dashboard.organizations.getOrganizationDevices(organization_id)
+# ========================================
+# Get MX Devices Public IPs
+# ========================================
+try:
+    print(f"Getting all devices for organization {organization_id}")
+    devices = dashboard.organizations.getOrganizationDevices(organization_id)
+    
+    mx_devices = [device for device in devices if 'MX' in device.get('model', '')]
+    print(f"Found {len(mx_devices)} MX devices with public IPs")
 
-# Filter for MX devices and prepare their public IP addresses for CSV output
-mx_devices_public_ips = [
-    {'Device Name': device['name'], 'WAN1 IP': device['wan1Ip'], 'WAN2 IP': device['wan2Ip']}
-    for device in devices if 'MX' in device['model']
-]
+    mx_public_ips = []
+    for device in mx_devices:
+        mx_public_ips.append({
+            'Device Name': device.get('name', 'N/A'),
+            'WAN1 IP': device.get('wan1Ip', 'N/A'),
+            'WAN2 IP': device.get('wan2Ip', 'N/A')
+        })
 
-# Define the folder path and CSV file name
-folder_path = 'Python_Scripts/Meraki/Output'
-csv_file_name = os.path.join(folder_path, 'mx_devices_public_ips.csv')
+# ========================================
+# CSV Output Configuration
+# ========================================
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    output_dir = os.path.join(script_dir, 'Output')
+    os.makedirs(output_dir, exist_ok=True)
+    csv_path = os.path.join(output_dir, 'mx_public_ips.csv')
 
-# Write the results to a CSV file
-with open(csv_file_name, mode='w', newline='') as file:
-    writer = csv.DictWriter(file, fieldnames=['Device Name', 'WAN1 IP', 'WAN2 IP'])
-    writer.writeheader()
-    writer.writerows(mx_devices_public_ips)
+    with open(csv_path, mode='w', newline='') as file:
+        writer = csv.DictWriter(file, fieldnames=['Device Name', 'WAN1 IP', 'WAN2 IP'])
+        writer.writeheader()
+        writer.writerows(mx_public_ips)
 
-# Print a success message
-print(f"MX devices' public IP addresses have been successfully written to {csv_file_name}.")
+    print(f"\nSuccessfully wrote public IPs for {len(mx_public_ips)} MX devices to {csv_path}")
+
+except Exception as e:
+    print(f"[ERROR] Failed to get public IPs: {e}")
+    raise

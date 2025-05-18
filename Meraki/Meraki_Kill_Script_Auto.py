@@ -1,121 +1,133 @@
+import os
 import csv
-from difflib import get_close_matches
-import meraki
 import time
-
+import meraki
+from difflib import get_close_matches
 from dotenv import load_dotenv
 from azure.identity import ClientSecretCredential
 from azure.keyvault.secrets import SecretClient
-import os
 
-# Construct the path to the .env file
+# ========================================
+# Load secrets from .env
+# ========================================
 env_path = os.path.join(os.path.dirname(__file__), '../../.env')
 print(f"Loading .env file from: {env_path}")
-
-# Load environment variables from .env file
 load_dotenv(dotenv_path=env_path)
 
+organization_id = os.getenv('ORGANIZATION_ID')
 tenant_id = os.getenv('AZURE_TENANT_ID')
 client_id = os.getenv('AZURE_CLIENT_ID')
 client_secret = os.getenv('AZURE_CLIENT_SECRET')
+key_vault_name = os.getenv('AZURE_KEY_VAULT')
+meraki_secret_name = os.getenv('MERAKI_SECRET_NAME')
 
-# Set up the Key Vault client
+# ========================================
+# Authenticate to Azure Key Vault
+# ========================================
 kv_uri = f"https://{key_vault_name}.vault.azure.net"
-
-# Authenticate using ClientSecretCredential
 credential = ClientSecretCredential(tenant_id, client_id, client_secret)
 client = SecretClient(vault_url=kv_uri, credential=credential)
+API_KEY = client.get_secret(meraki_secret_name).value
 
-# Retrieve the secret
-API_KEY = client.get_secret(secret_name).value
-
-# Initialize the Meraki API session
+# ========================================
+# Connect to Meraki Dashboard API
+# ========================================
 dashboard = meraki.DashboardAPI(API_KEY, suppress_logging=True)
 
+# ========================================
+# Network ID Lookup from CSV
+# ========================================
 def get_network_id_from_csv(csv_file_path, name):
-    with open(csv_file_path, mode='r') as file:
-        csv_reader = csv.DictReader(file)
-        names = [row['Name'] for row in csv_reader]
-        # Find close matches to the given name
-        close_matches = get_close_matches(name, names, n=5, cutoff=0.4)  # Set cutoff to 0.0 to suggest even weak matches
-        if close_matches:
-            print("Did you mean one of the following?")
-            for i, match in enumerate(close_matches, 1):
-                print(f"{i}. {match}")
-            selected = int(input("Enter the number of the correct device name, or 0 if none: "))
-            if selected > 0:
-                # Reset file pointer to the beginning
-                file.seek(0)
-                # If user selects a match, find the network ID for the selected match
-                for row in csv_reader:
-                    if row['Name'] == close_matches[selected - 1]:
-                        return row['Network ID']
-        else:
-            # If no close matches, return None
+    try:
+        with open(csv_file_path, mode='r') as file:
+            csv_reader = csv.DictReader(file)
+            names = [row['Name'] for row in csv_reader]
+            
+            close_matches = get_close_matches(name, names, n=5, cutoff=0.4)
+            if close_matches:
+                print("Did you mean one of the following?")
+                for i, match in enumerate(close_matches, 1):
+                    print(f"{i}. {match}")
+                selected = int(input("Enter the number of the correct device name, or 0 if none: "))
+                if selected > 0:
+                    file.seek(0)
+                    for row in csv_reader:
+                        if row['Name'] == close_matches[selected - 1]:
+                            return row['Network ID']
             return None
+    except Exception as e:
+        print(f"[ERROR] Failed to read CSV file: {e}")
+        raise
 
-# Define the folder path and CSV file name
-folder_path = 'Python_Scripts/Meraki/Output'
-csv_file_name = os.path.join(folder_path, 'devices.csv')
+# ========================================
+# Main Execution
+# ========================================
+if __name__ == '__main__':
+    try:
+        # Set up CSV path
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        output_dir = os.path.join(script_dir, 'Output')
+        csv_path = os.path.join(output_dir, 'devices.csv')
+        
+        print(f"CSV file path: {csv_path}")
+        name_to_search = input("Please enter the device name: ")
+        
+        network_id = get_network_id_from_csv(csv_path, name_to_search)
+        if not network_id:
+            raise ValueError(f"No Network ID found for {name_to_search}")
+            
+        print(f"\nNetwork ID for {name_to_search}: {network_id}")
+        wait_time = 30  # TODO: Adjust wait time if needed
 
-# Set the path to your CSV file
-CSV_FILE_PATH = csv_file_name
+        # ========================================
+        # Disable Network Services
+        # ========================================
+        print("\nDisabling network services...")
+        vlans = dashboard.appliance.getNetworkApplianceVlans(network_id)
+        
+        for vlan in vlans:
+            vlan_id = vlan['id']
+            dashboard.appliance.updateNetworkApplianceVlan(
+                network_id, vlan_id,
+                dhcpHandling='Do not respond to DHCP requests'
+            )
+            print(f"Disabled DHCP for VLAN {vlan_id}")
 
-print(f"CSV file path: {CSV_FILE_PATH}")
-# Prompt the user for the device name
-name_to_search = input("Please enter the device name: ")
+        dashboard.appliance.updateNetworkApplianceVpnSiteToSiteVpn(
+            network_id, 'none'
+        )
+        print("Disabled VPN connectivity")
+        
+        # ========================================
+        # Wait Period
+        # ========================================
+        print(f"\nWaiting {wait_time} seconds...")
+        time.sleep(wait_time)
+        
+        # ========================================
+        # Restore Network Services
+        # ========================================
+        print("\nRestoring network services...")
+        dashboard.appliance.updateNetworkApplianceVpnSiteToSiteVpn(
+            network_id, 'spoke',
+            hubs=[
+                {'hubId': 'N_xxxx1', 'useDefaultRoute': True},  # TODO: Update hub IDs
+                {'hubId': 'N_6xxxx', 'useDefaultRoute': True}   # TODO: Update hub IDs
+            ]
+        )
+        print("Restored VPN connectivity")
 
-# Get the network ID using the provided name
-network_id = get_network_id_from_csv(CSV_FILE_PATH, name_to_search)
+        for vlan in vlans:
+            vlan_id = vlan['id']
+            dashboard.appliance.updateNetworkApplianceVlan(
+                network_id, vlan_id,
+                dhcpHandling='Relay DHCP to another server',
+                dhcpRelayServerIps=['1.1.1.1', '8.8.8.8']  # TODO: Update DHCP relay IPs
+            )
+            print(f"Restored DHCP for VLAN {vlan_id}")
 
-if network_id:
-    print(f"The Network ID for {name_to_search} is {network_id}.")
-else:
-    print(f"No Network ID found for the name {name_to_search}.")
-
-wait_time = 30
-
-# Get a list of all VLANs in the network
-vlans = dashboard.appliance.getNetworkApplianceVlans(network_id)
-
-# Iterate through each VLAN and update DHCP handling
-for vlan in vlans:
-    vlan_id = vlan['id']
-    response = dashboard.appliance.updateNetworkApplianceVlan(
-        network_id, vlan_id,
-        dhcpHandling='Do not respond to DHCP requests'
-    )
-    print(f"Updated VLAN {vlan_id}: {response}")
-
-# Set 'mode' to none, for VPN
-mode = 'none'
-response = dashboard.appliance.updateNetworkApplianceVpnSiteToSiteVpn(
-    network_id, mode,
-)
-print(response)
-
-#Wait for x seconds
-time.sleep(wait_time)
-
-# Set 'mode' to spoke, for VPN. Add both hubs back
-mode = 'spoke'
-response = dashboard.appliance.updateNetworkApplianceVpnSiteToSiteVpn(
-    network_id, mode,
-    hubs=[
-        {'hubId': 'N_xxxx1', 'useDefaultRoute': True},
-        {'hubId': 'N_6xxxx', 'useDefaultRoute': True}
-    ]
-)
-print(response)
-
-# Iterate through each VLAN and update DHCP handling and relay settings
-for vlan in vlans:
-    vlan_id = vlan['id']
-    response = dashboard.appliance.updateNetworkApplianceVlan(
-        network_id, vlan_id,
-        dhcpHandling='Relay DHCP to another server',
-        dhcpRelayServerIps=['1.1.1.1', '8.8.8.8']
-    )
-    print(f"Updated VLAN {vlan_id}: {response}")
-
-
+        print("\nNetwork services successfully restored")
+        
+    except Exception as e:
+        print(f"[ERROR] Script execution failed: {e}")
+        raise
