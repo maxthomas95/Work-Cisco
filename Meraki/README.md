@@ -1,5 +1,14 @@
 # Meraki Scripts Documentation
 
+## Table of Contents
+- [Scripts Overview](#scripts-overview)
+- [Requirements](#requirements-all-scripts)
+- [Usage](#usage-all-scripts)
+- [Script Details](#script-details)
+- [Authentication Flow](#authentication-flow-all-scripts)
+- [Configuration Notes](#configuration-notes)
+- [Troubleshooting](#troubleshooting)
+
 ## Scripts Overview
 1. `Meraki_GetAllDevices.py` - Exports complete device inventory to CSV
 2. `Meraki_VPN_Status.py` - Monitors VPN connection status
@@ -25,6 +34,52 @@
 22. `Meraki_Reboot_AllAPs.py` - Reboots all access points
 23. `Meraki_Reboot_TeamsPhones_All.py` - Reboots all Teams phones
 24. `Meraki_Reboot_TeamsPhones_Simple.py` - Reboots Teams phones in single network
+
+## 📘 Naming Convention
+
+Scripts in this repo follow two common patterns:
+
+- **`Simple`** – Targets a **single Meraki network** that must be specified manually (via a hardcoded value or `.env` file)
+- **`All`** – Operates across **all networks in the organization**, using the Org ID from `.env`
+
+> 🔧 Use `Simple` scripts for testing or small-scope changes. Use `All` scripts when applying changes org-wide.
+
+---
+
+## 📂 Script Categories
+
+### 🧾 Inventory & Reporting
+- `Meraki_GetAllDevices.py` – Export device inventory to CSV  
+- `Meraki_GetAllNetworks.py` – List all networks in organization  
+- `Meraki_GetPublicIPs.py` – Get public IPs for all networks  
+- `Meraki_Find_IP.py` – Locate a specific IP address  
+- `Meraki_AP_GetAllAPInfo.py` – Retrieve all AP info  
+- `Meraki_AP_GetAPTags.py` – Get tags for specific APs  
+- `Meraki_Get_SecondOctet.py` – Report second octet info (IP addressing logic)
+
+### 🔒 Configuration – VLAN, Split Tunnel, Firewall
+- `Meraki_ChangeVLAN3rdOctet_AllNetworks.py` – Update VLAN octets across org  
+- `Meraki_ChangeVLAN3rdOctet_Simple.py` – Update VLAN octet for one network  
+- `Meraki_SplitTunnel_All_VPN_Networks.py` – Configure split tunnel for all VPN networks  
+- `Meraki_SplitTunnel_Simple.py` – Split tunnel setup for one VPN network  
+- `Meraki_FW_L3_Rules_ALL_VPN-Networks.py` – Configure firewall rules org-wide  
+- `Meraki_FW_L3_Rules_Simple.py` – Configure firewall rules for one network  
+- `Meraki_FW_L3_Append_Rules.py` – Append firewall rules without overwriting  
+- `Meraki_Create-TD-Kiosk.py` – Setup kiosk network config (VLAN, firewall, DHCP)
+
+### ⚙️ Automation & Maintenance
+- `Meraki_Track_ImportantDevices.py` – Track critical ports (e.g., cameras)  
+- `Meraki_AP_AddTag.py` – Add tags to access points  
+- `Meraki_Reboot_AllAPs.py` – Reboot all access points  
+- `Meraki_Reboot_TeamsPhones_All.py` – Reboot all Teams phones  
+- `Meraki_Reboot_TeamsPhones_Simple.py` – Reboot Teams phones in one network  
+- `Meraki_Kill_Script_Auto.py` – Auto-terminate long-running scripts  
+- `Meraki_Kill_Script_Manual.py` – Manually terminate a running script  
+
+### 🛡️ Monitoring & Validation
+- `Meraki_VPN_Status.py` – Monitor VPN tunnel status  
+- `Meraki_Check_AllErrors.py` – Check for common misconfigurations  
+
 
 ## Requirements (All Scripts)
 - Meraki API key stored in Azure Key Vault
