@@ -1,48 +1,30 @@
-# Meraki Scripts Documentation
+# 📦 Meraki Automation Scripts
 
-## Table of Contents
-- [Scripts Overview](#scripts-overview)
-- [Requirements](#requirements-all-scripts)
-- [Usage](#usage-all-scripts)
-- [Script Details](#script-details)
-- [Authentication Flow](#authentication-flow-all-scripts)
-- [Configuration Notes](#configuration-notes)
-- [Troubleshooting](#troubleshooting)
+A collection of Python scripts for automating and managing Cisco Meraki networks via the Meraki Dashboard API. Tasks include inventory reporting, firewall/VLAN configuration, AP tagging, and more — all with centralized authentication and reusable code patterns.
 
-## Scripts Overview
-1. `Meraki_GetAllDevices.py` - Exports complete device inventory to CSV
-2. `Meraki_VPN_Status.py` - Monitors VPN connection status
-3. `Meraki_Track_ImportantDevices.py` - Tracks any device ports across switches
-4. `Meraki_SplitTunnel_All_VPN_Networks.py` - Configures split tunneling for all VPN networks
-5. `Meraki_SplitTunnel_Simple.py` - Configures split tunneling for a single network
-6. `Meraki_AP_AddTag.py` - Adds tags to access points
-7. `Meraki_AP_GetAllAPInfo.py` - Retrieves all AP information
-8. `Meraki_AP_GetAPTags.py` - Gets tags for specific APs
-9. `Meraki_ChangeVLAN3rdOctet_AllNetworks.py` - Updates VLAN third octet across networks
-10. `Meraki_ChangeVLAN3rdOctet_Simple.py` - Updates VLAN third octet for single network
-11. `Meraki_Check_AllErrors.py` - Checks for common configuration errors
-12. `Meraki_Create-TD-Kiosk.py` - Creates TalkDesk kiosk configuration
-13. `Meraki_Find_IP.py` - Locates specific IP in network
-14. `Meraki_FW_L3_Append_Rules.py` - Appends firewall rules
-15. `Meraki_FW_L3_Rules_ALL_VPN-Networks.py` - Configures firewall rules for VPN networks
-16. `Meraki_FW_L3_Rules_Simple.py` - Configures basic firewall rules
-17. `Meraki_Get_SecondOctet.py` - Retrieves second octet information
-18. `Meraki_GetAllNetworks.py` - Lists all networks
-19. `Meraki_GetPublicIPs.py` - Gets public IP information
-20. `Meraki_Kill_Script_Auto.py` - Automated script termination
-21. `Meraki_Kill_Script_Manual.py` - Manual script termination
-22. `Meraki_Reboot_AllAPs.py` - Reboots all access points
-23. `Meraki_Reboot_TeamsPhones_All.py` - Reboots all Teams phones
-24. `Meraki_Reboot_TeamsPhones_Simple.py` - Reboots Teams phones in single network
+---
+
+## 📑 Table of Contents
+- [📘 Naming Convention](#-naming-convention)
+- [📂 Script Categories](#-script-categories)
+- [🛠 Requirements](#-requirements-all-scripts)
+- [🚀 Quickstart](#-quickstart)
+- [⚙️ Usage](#-usage-all-scripts)
+- [📜 Script Details](#-script-details)
+- [🔐 Authentication Flow](#-authentication-flow-all-scripts)
+- [🧩 Configuration Notes](#-configuration-notes)
+- [❗ Troubleshooting](#-troubleshooting)
+
+---
 
 ## 📘 Naming Convention
 
-Scripts in this repo follow two common patterns:
+Scripts follow two main patterns:
 
-- **`Simple`** – Targets a **single Meraki network** that must be specified manually (via a hardcoded value or `.env` file)
-- **`All`** – Operates across **all networks in the organization**, using the Org ID from `.env`
+- **`Simple`** – Targets a **single Meraki network**, manually defined via script variable or `.env`
+- **`All`** – Operates across **all networks in the organization** using the Org ID from `.env`
 
-> 🔧 Use `Simple` scripts for testing or small-scope changes. Use `All` scripts when applying changes org-wide.
+> 🔧 Use `Simple` scripts for small-scope testing. Use `All` scripts for organization-wide automation.
 
 ---
 
@@ -50,49 +32,89 @@ Scripts in this repo follow two common patterns:
 
 ### 🧾 Inventory & Reporting
 - `Meraki_GetAllDevices.py` – Export device inventory to CSV  
-- `Meraki_GetAllNetworks.py` – List all networks in organization  
-- `Meraki_GetPublicIPs.py` – Get public IPs for all networks  
-- `Meraki_Find_IP.py` – Locate a specific IP address  
-- `Meraki_AP_GetAllAPInfo.py` – Retrieve all AP info  
-- `Meraki_AP_GetAPTags.py` – Get tags for specific APs  
-- `Meraki_Get_SecondOctet.py` – Report second octet info (IP addressing logic)
+- `Meraki_GetAllNetworks.py` – List all org networks  
+- `Meraki_GetPublicIPs.py` – Fetch public IP assignments  
+- `Meraki_Find_IP.py` – Locate specific IP addresses  
+- `Meraki_AP_GetAllAPInfo.py` – Pull detailed AP information  
+- `Meraki_AP_GetAPTags.py` – Get tags per AP  
+- `Meraki_Get_SecondOctet.py` – Report IP addressing patterns
 
-### 🔒 Configuration – VLAN, Split Tunnel, Firewall
-- `Meraki_ChangeVLAN3rdOctet_AllNetworks.py` – Update VLAN octets across org  
-- `Meraki_ChangeVLAN3rdOctet_Simple.py` – Update VLAN octet for one network  
-- `Meraki_SplitTunnel_All_VPN_Networks.py` – Configure split tunnel for all VPN networks  
-- `Meraki_SplitTunnel_Simple.py` – Split tunnel setup for one VPN network  
-- `Meraki_FW_L3_Rules_ALL_VPN-Networks.py` – Configure firewall rules org-wide  
-- `Meraki_FW_L3_Rules_Simple.py` – Configure firewall rules for one network  
-- `Meraki_FW_L3_Append_Rules.py` – Append firewall rules without overwriting  
-- `Meraki_Create-TD-Kiosk.py` – Setup kiosk network config (VLAN, firewall, DHCP)
+### 🔒 Configuration – VLANs, Tunnels, Firewalls
+- `Meraki_ChangeVLAN3rdOctet_AllNetworks.py` – Bulk VLAN octet updates  
+- `Meraki_ChangeVLAN3rdOctet_Simple.py` – VLAN update for single network  
+- `Meraki_SplitTunnel_All_VPN_Networks.py` – Set split tunnel rules org-wide  
+- `Meraki_SplitTunnel_Simple.py` – Split tunnel config for one network  
+- `Meraki_FW_L3_Rules_ALL_VPN-Networks.py` – Org-wide firewall rules  
+- `Meraki_FW_L3_Rules_Simple.py` – Single network firewall config  
+- `Meraki_FW_L3_Append_Rules.py` – Append rules without overwriting  
+- `Meraki_Create-TD-Kiosk.py` – Setup TalkDesk kiosk VLAN/DHCP/firewall
 
 ### ⚙️ Automation & Maintenance
-- `Meraki_Track_ImportantDevices.py` – Track critical ports (e.g., cameras)  
-- `Meraki_AP_AddTag.py` – Add tags to access points  
-- `Meraki_Reboot_AllAPs.py` – Reboot all access points  
+- `Meraki_Track_ImportantDevices.py` – Track "Camera" ports across switches  
+- `Meraki_AP_AddTag.py` – Tag access points by SSID or name  
+- `Meraki_Reboot_AllAPs.py` – Reboot all APs in org  
 - `Meraki_Reboot_TeamsPhones_All.py` – Reboot all Teams phones  
-- `Meraki_Reboot_TeamsPhones_Simple.py` – Reboot Teams phones in one network  
-- `Meraki_Kill_Script_Auto.py` – Auto-terminate long-running scripts  
-- `Meraki_Kill_Script_Manual.py` – Manually terminate a running script  
+- `Meraki_Reboot_TeamsPhones_Simple.py` – Reboot Teams phones per site  
+- `Meraki_Kill_Script_Auto.py` – Auto-terminate scripts  
+- `Meraki_Kill_Script_Manual.py` – Manual termination
 
 ### 🛡️ Monitoring & Validation
-- `Meraki_VPN_Status.py` – Monitor VPN tunnel status  
-- `Meraki_Check_AllErrors.py` – Check for common misconfigurations  
+- `Meraki_VPN_Status.py` – VPN tunnel monitoring  
+- `Meraki_Check_AllErrors.py` – Detect config issues
 
+---
 
-## Requirements (All Scripts)
-- Meraki API key stored in Azure Key Vault
+## 🛠 Requirements (All Scripts)
+
+- Python 3.8+
+- Required packages (install via `requirements.txt`)
+- Meraki API key stored in **Azure Key Vault**
 - Azure service principal credentials
-- Organization ID in environment variables
-- Python 3.8+ with required packages
+- Organization ID stored in environment variables
 
-## Usage (All Scripts)
+---
+
+## ⚡ Quickstart
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/your-org/meraki-scripts.git
+cd meraki-scripts
+
+# 2. Set up a .env file
+cp .env.example .env  # or create manually
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Run your first script
+python Meraki_GetAllDevices.py
+```
+
+---
+
+## 📝 Example `.env` File
+
+```env
+AZURE_TENANT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+AZURE_CLIENT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+AZURE_CLIENT_SECRET=your-client-secret
+MERAKI_ORG_ID=123456
+```
+
+---
+
+## ⚙️ Usage (All Scripts)
+
 ```bash
 python script_name.py
 ```
 
-## Script Details
+> Output is typically printed to the console and/or written to `Output/` in CSV or JSON format depending on the script.
+
+---
+
+## 📜 Script Details
 
 ### Meraki_GetAllDevices.py
 #### Description
@@ -390,53 +412,64 @@ Reboots Teams phones in single network.
 #### Output
 Reboot confirmation
 
-## Authentication Flow (All Scripts)
+---
+
+## 🔐 Authentication Flow (All Scripts)
+
 1. Load credentials from `.env`
-2. Authenticate to Azure Key Vault  
+2. Authenticate to Azure Key Vault
 3. Retrieve Meraki API key
 4. Connect to Meraki Dashboard API
 
-## Configuration Notes
-### Important TODOs
-1. Network IDs must be updated in:
-   - Meraki_SplitTunnel_Simple.py
-   - Meraki_Reboot_TeamsPhones_Simple.py  
-   - Meraki_Kill_Script_Manual.py
-   - Meraki_Get_SecondOctet.py
-   - Meraki_FW_L3_Rules_Simple.py
-   - Meraki_FW_L3_Append_Rules.py
-   - Meraki_Create-TD-Kiosk.py
-   - Meraki_AP_GetAPTags.py
-   - Meraki_AP_GetAllAPInfo.py
-   - Meraki_AP_AddTag.py
+---
 
-2. VLAN IDs need configuration in:
-   - Meraki_Get_SecondOctet.py
-   - Meraki_GetAllNetworks.py
-   - Meraki_FW_L3_Rules_Simple.py
-   - Meraki_FW_L3_Rules_ALL_VPN-Networks.py
-   - Meraki_ChangeVLAN3rdOctet_Simple.py
-   - Meraki_ChangeVLAN3rdOctet_AllNetworks.py
 
-3. IP/CIDR ranges require updates in:
-   - Meraki_FW_L3_Rules_Simple.py
-   - Meraki_FW_L3_Rules_ALL_VPN-Networks.py
-   - Meraki_FW_L3_Append_Rules.py
-   - Meraki_Create-TD-Kiosk.py
+## 🧩 Configuration Notes
 
-## Troubleshooting
-### Common Issues
-- Invalid Azure credentials
-- Missing Key Vault permissions  
-- Expired Meraki API key
-- Incorrect organization ID
-- Unconfigured network/VLAN IDs
+### 🔧 Required Script Modifications
 
-### Script-Specific
-- GetAllDevices: Verify CSV write permissions
-- VPN_Status: Check VPN appliance presence
-- TrackDevices: Ensure port naming conventions
-- SplitTunnel: Validate network IDs
-- Firewall scripts: Confirm CIDR ranges
-- AP scripts: Verify tag naming
-- Reboot scripts: Check device connectivity
+#### 1. Network IDs must be updated in:
+- `Meraki_SplitTunnel_Simple.py`
+- `Meraki_Reboot_TeamsPhones_Simple.py`  
+- `Meraki_Kill_Script_Manual.py`
+- `Meraki_Get_SecondOctet.py`
+- `Meraki_FW_L3_Rules_Simple.py`
+- `Meraki_FW_L3_Append_Rules.py`
+- `Meraki_Create-TD-Kiosk.py`
+- `Meraki_AP_GetAPTags.py`
+- `Meraki_AP_GetAllAPInfo.py`
+- `Meraki_AP_AddTag.py`
+
+#### 2. VLAN IDs need configuration in:
+- `Meraki_Get_SecondOctet.py`
+- `Meraki_GetAllNetworks.py`
+- `Meraki_FW_L3_Rules_Simple.py`
+- `Meraki_FW_L3_Rules_ALL_VPN-Networks.py`
+- `Meraki_ChangeVLAN3rdOctet_Simple.py`
+- `Meraki_ChangeVLAN3rdOctet_AllNetworks.py`
+
+#### 3. IP/CIDR ranges require updates in:
+- `Meraki_FW_L3_Rules_Simple.py`
+- `Meraki_FW_L3_Rules_ALL_VPN-Networks.py`
+- `Meraki_FW_L3_Append_Rules.py`
+- `Meraki_Create-TD-Kiosk.py`
+
+---
+
+## ❗ Troubleshooting
+
+### 🔄 Common Issues
+- ❌ Invalid or missing Azure credentials
+- 🔒 Key Vault access denied
+- ⏳ Expired Meraki API key
+- 🆔 Incorrect or unset Org ID
+- ⚙️ Network or VLAN IDs not configured in script
+
+### 🔍 Script-Specific Tips
+- `GetAllDevices`: Ensure write access to `Output/`
+- `VPN_Status`: Verify MX appliances exist
+- `TrackDevices`: Use consistent port names (e.g., "Camera")
+- `SplitTunnel`: Double-check target network IDs
+- `Firewall Rules`: Validate CIDR/IP format
+- `AP Scripts`: Confirm tag names and network IDs
+- `Reboot Scripts`: Confirm devices are online and reachable
