@@ -1,5 +1,11 @@
 # 📦 Meraki Automation Scripts
 
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python&logoColor=white)
+![Meraki API](https://img.shields.io/badge/Uses-Meraki%20Dashboard%20API-yellow?logo=cisco&logoColor=white)
+![Azure Key Vault](https://img.shields.io/badge/Auth-Azure%20Key%20Vault-blueviolet?logo=microsoftazure&logoColor=white)
+![Automation](https://img.shields.io/badge/Automation-Networking-orange?logo=githubactions&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Active-brightgreen)
+
 A collection of Python scripts for automating and managing Cisco Meraki networks via the Meraki Dashboard API. Tasks include inventory reporting, firewall/VLAN configuration, AP tagging, and more — all with centralized authentication and reusable code patterns.
 
 ---
