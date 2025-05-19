@@ -1,38 +1,43 @@
 ---
+# Purpose: Manages BGP prefix lists on Cisco Nexus devices
 - name: Update BGP Prefix List on Nexus Core
-  hosts: AAA-CORES
-  gather_facts: no
+  hosts: AAA-CORES  # Targets Nexus core switches group
+  gather_facts: no 
   connection: network_cli
 
   tasks:
+    # Task 1: Read the virtual network prefix from generated file
     - name: Read VNet prefix from file
-      command: cat vnet_prefix.txt
-      register: vnet_prefix
+      command: cat vnet_prefix.txt 
+      register: vnet_prefix  # Stores output in vnet_prefix variable
 
+    # Task 2: Verify if prefix already exists in configuration
     - name: Check if prefix-list entry already exists
       cisco.nxos.nxos_command:
         commands: "show ip prefix-list eBGP-to-OSPF {{ vnet_prefix.stdout }}"
-      register: existing_prefix
-      ignore_errors: yes
+      register: existing_prefix  # Stores command output
+      ignore_errors: yes  # Continue if command fails (prefix doesn't exist)
 
+    # Task 3: Debug output for troubleshooting
     - name: Debug - Show existing prefix list
       debug:
-        var: existing_prefix.stdout_lines
+        var: existing_prefix.stdout_lines  # Prints current prefix list
 
+    # Task 4: Add prefix if not already configured (idempotent operation)
     - name: Ensure the prefix list exists (Only if not present)
       cisco.nxos.nxos_config:
         lines:
-          - "ip prefix-list eBGP-to-OSPF permit {{ vnet_prefix.stdout }}"
-      when: 
-        - existing_prefix.stdout_lines is defined
-        - "vnet_prefix.stdout not in existing_prefix.stdout_lines | join(' ')"
+          - "ip prefix-list eBGP-to-OSPF permit {{ vnet_prefix.stdout }}"  # BGP config line
+      when:  # Conditions for execution:
+        - existing_prefix.stdout_lines is defined  # Command output exists
+        - "vnet_prefix.stdout not in existing_prefix.stdout_lines | join(' ')"  # Prefix missing
 
+    # Task 5: Display execution result
     - name: Display change result
       debug:
-        msg: >
+        msg: >  # Multi-line message with conditional logic
           {% if prefix_result is defined and prefix_result.changed %}
             Prefix {{ vnet_prefix.stdout }} was added to eBGP-to-OSPF!
           {% else %}
             Prefix {{ vnet_prefix.stdout }} already exists, no changes made.
           {% endif %}
-
