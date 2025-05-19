@@ -163,6 +163,8 @@ Raw JSON with:
 - Gateway info and metrics
 - Traffic statistics
 
+---
+
 ### Meraki_Track_ImportantDevices.py
 #### Description
 Tracks and reports on camera ports across all switches.
@@ -177,6 +179,8 @@ CSV file (`Output/camera_ports.csv`) with:
 - Network and device names
 - Port IDs and names
 
+---
+
 ### Meraki_SplitTunnel_All_VPN_Networks.py
 #### Description
 Configures split tunneling rules for all VPN networks.
@@ -188,6 +192,8 @@ Configures split tunneling rules for all VPN networks.
 
 #### Output
 Console confirmation of applied rules
+
+---
 
 ### Meraki_SplitTunnel_Simple.py
 #### Description
@@ -201,6 +207,8 @@ Configures split tunneling for a single network.
 #### Output
 Console confirmation of applied rules
 
+---
+
 ### Meraki_AP_AddTag.py
 #### Description
 Adds tags to Meraki access points.
@@ -212,6 +220,8 @@ Adds tags to Meraki access points.
 
 #### Output
 Console confirmation of tag additions
+
+---
 
 ### Meraki_AP_GetAllAPInfo.py
 #### Description
@@ -225,6 +235,8 @@ Retrieves comprehensive AP information.
 #### Output
 JSON data with AP details
 
+---
+
 ### Meraki_AP_GetAPTags.py
 #### Description
 Gets tags for specific access points.
@@ -236,6 +248,8 @@ Gets tags for specific access points.
 
 #### Output
 Formatted list of AP tags
+
+---
 
 ### Meraki_ChangeVLAN3rdOctet_AllNetworks.py
 #### Description
@@ -249,6 +263,8 @@ Updates VLAN third octet across all networks.
 #### Output
 Console log of changes
 
+---
+
 ### Meraki_ChangeVLAN3rdOctet_Simple.py
 #### Description
 Updates VLAN third octet for single network.
@@ -260,6 +276,8 @@ Updates VLAN third octet for single network.
 
 #### Output
 Console confirmation
+
+---
 
 ### Meraki_Check_AllErrors.py
 #### Description
@@ -273,6 +291,8 @@ Checks for common configuration errors.
 #### Output
 Error report
 
+---
+
 ### Meraki_Create-TD-Kiosk.py
 #### Description
 Creates TalkDesk kiosk configuration.
@@ -284,6 +304,8 @@ Creates TalkDesk kiosk configuration.
 
 #### Output
 Configuration summary
+
+---
 
 ### Meraki_Find_IP.py
 #### Description
@@ -297,6 +319,8 @@ Locates specific IP in network.
 #### Output
 CSV with IP locations
 
+---
+
 ### Meraki_FW_L3_Append_Rules.py
 #### Description
 Appends firewall rules.
@@ -308,6 +332,8 @@ Appends firewall rules.
 
 #### Output
 Rule confirmation
+
+---
 
 ### Meraki_FW_L3_Rules_ALL_VPN-Networks.py
 #### Description
@@ -321,6 +347,8 @@ Configures firewall rules for VPN networks.
 #### Output
 Rule application log
 
+---
+
 ### Meraki_FW_L3_Rules_Simple.py
 #### Description
 Configures basic firewall rules.
@@ -332,6 +360,8 @@ Configures basic firewall rules.
 
 #### Output
 Rule confirmation
+
+---
 
 ### Meraki_Get_SecondOctet.py
 #### Description
@@ -345,6 +375,8 @@ Retrieves second octet information.
 #### Output
 Second octet details
 
+---
+
 ### Meraki_GetAllNetworks.py
 #### Description
 Lists all networks.
@@ -356,6 +388,8 @@ Lists all networks.
 
 #### Output
 Network list
+
+---
 
 ### Meraki_GetPublicIPs.py
 #### Description
@@ -369,6 +403,8 @@ Gets public IP information.
 #### Output
 Public IP report
 
+---
+
 ### Meraki_Kill_Script_Auto.py
 #### Description
 Automated script termination.
@@ -380,6 +416,8 @@ Automated script termination.
 
 #### Output
 Termination confirmation
+
+---
 
 ### Meraki_Kill_Script_Manual.py
 #### Description
@@ -393,6 +431,8 @@ Manual script termination.
 #### Output
 Termination status
 
+---
+
 ### Meraki_Reboot_AllAPs.py
 #### Description
 Reboots all access points.
@@ -405,6 +445,8 @@ Reboots all access points.
 #### Output
 Reboot report
 
+---
+
 ### Meraki_Reboot_TeamsPhones_All.py
 #### Description
 Reboots all Teams phones.
@@ -416,6 +458,8 @@ Reboots all Teams phones.
 
 #### Output
 Reboot summary
+
+---
 
 ### Meraki_Reboot_TeamsPhones_Simple.py
 #### Description
