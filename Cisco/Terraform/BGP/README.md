@@ -2,7 +2,7 @@
 
 This directory contains Terraform configurations for automating BGP peering setup on Cisco Nexus devices.
 
-## Architecture Overview
+## 🧠 Architecture Overview
 
 ```mermaid
 graph TD
@@ -13,16 +13,24 @@ graph TD
     E --> F[Configure BGP on Nexus]
 ```
 
-## Prerequisites
+**How it works:** Terraform initializes the setup, generates required files, transfers them to the Ansible control node, and triggers an Ansible playbook that configures BGP on the target Nexus switch.
 
-- Terraform 1.0+
-- Ansible control node with:
-  - SSH access to network devices
-  - Git client
-  - Ansible 2.9+
-- Base64 encoded credentials for Ansible control node
+---
 
-## Configuration Workflow
+## ✅ Prerequisites
+
+- **Terraform** v1.0 or higher
+- **Ansible** v2.9 or higher (on a control node)
+- **Python** (required for Ansible modules)
+- Ansible control node must have:
+  - SSH access to Nexus devices
+  - Git installed
+- Base64-encoded credentials for SSH (used by Terraform)
+- SSH keys recommended (optional)
+
+---
+
+## ⚙️ Configuration Workflow
 
 1. **Input Variables** - Set in `terraform.tfvars`:
    ```hcl
@@ -32,13 +40,22 @@ graph TD
    ansible_vm_password_base64 = "base64encodedpassword"
    ```
 
-2. **Execution Steps** (defined in `main.tf`):
+2. **Run Terraform**
+   ```bash
+   terraform init
+   terraform plan
+   terraform apply
+   ```
+
+3. **Execution Steps** (defined in `main.tf`):
    - Generates network prefix file
    - Clones configuration repository
    - Transfers required files
    - Runs Ansible playbook to configure BGP
 
-## File Descriptions
+---
+
+## 📁 File Descriptions
 
 | File | Purpose |
 |------|---------|
@@ -49,37 +66,47 @@ graph TD
 | `nexus_bgp.yml` | Ansible playbook for BGP config |
 | `vnet_prefix.txt` | Generated file containing network prefix (auto-created) |
 
-## Usage
+---
+
+## 🔐 Security Notes
+
+- Passwords are **base64-encoded**, but not encrypted—consider using:
+  - **SSH key-based authentication**
+  - **HashiCorp Vault** or **Ansible Vault** for secure secret storage
+  - **Ephemeral credentials** for automation
+- Ensure `.ssh/known_hosts` is prepopulated or SSH key checking is handled
+- Do **not commit** `terraform.tfvars` or secrets to Git
+
+---
+
+## 🧪 Validation
+
+The following input checks are enforced:
+
+- Valid CIDR notation (`test_vnet_prefix`)
+- Proper base64 encoding (`ansible_vm_password_base64`)
+- Valid IP/FQDN for Ansible control node (`ansible_vm_ip`)
+
+> ✅ Upon success, verify Nexus BGP config with:
 
 ```bash
-# Initialize Terraform
-terraform init
-
-# Plan changes
-terraform plan
-
-# Apply configuration
-terraform apply
+show ip bgp summary
 ```
 
-## Security Notes
+---
 
-- Passwords are base64 encoded but consider using:
-  - SSH keys instead of passwords
-  - HashiCorp Vault for credential management
-  - Temporary credentials for automation
-
-## Validation
-
-The configuration includes input validation for:
-- CIDR notation in network prefixes
-- Valid IP addresses/FQDNs
-- Proper base64 encoding
-
-## Troubleshooting
+## 🧰 Troubleshooting
 
 Check Terraform logs and verify:
 1. Ansible control node connectivity
 2. Repository clone success
 3. File transfers completed
 4. SSH host keys properly added
+
+---
+
+## 📘 References
+
+- [Terraform Docs](https://www.terraform.io/docs)
+- [Ansible for Network Automation](https://docs.ansible.com/ansible/latest/network/index.html)
+- [Cisco Nexus BGP Configuration Guide](https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-installation-and-configuration-guides-list.html)

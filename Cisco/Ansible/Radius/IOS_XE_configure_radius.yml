@@ -1,19 +1,21 @@
 ---
+# Purpose: Configures RADIUS authentication on Cisco 9300 switches
 - name: Configure RADIUS on Cisco 9300
-  hosts: AAA
-  gather_facts: no
-  connection: network_cli
+  hosts: AAA  # Targets devices in AAA group
+  gather_facts: no  # Disabled for network devices
+  connection: network_cli  # Uses network CLI connection
 
+  # Secured variables loaded from Ansible Vault
   vars:
-    ansible_user: "{{ vault_ansible_user }}"
-    ansible_password: "{{ vault_ansible_password }}"
-    radius_shared_secret: "{{ vault_radius_secret }}"
+    ansible_user: "{{ vault_ansible_user }}"  # Encrypted username
+    ansible_password: "{{ vault_ansible_password }}"  # Encrypted password
+    radius_shared_secret: "{{ vault_radius_secret }}"  # Encrypted RADIUS secret
 
   tasks:
     - name: Enable password encryption
       ios_config:
         lines:
-          - service password-encryption
+          - service password-encryption  # Encrypts all passwords
         match: exact
         replace: line
 
@@ -21,15 +23,15 @@
       ios_config:
         lines:
           - radius server AAA-Radius
-          - address ipv4 aaa.aaa.aaa.aaa auth-port 1812 acct-port 1813
-          - key {{ radius_shared_secret }}
+          - address ipv4 aaa.aaa.aaa.aaa auth-port 1812 acct-port 1813  # Server details
+          - key {{ radius_shared_secret }}  # Shared secret from vault
         match: exact
         replace: line
 
     - name: Configure BBB-Radius server
       ios_config:
         lines:
-          - radius server BBB-Radius
+          - radius server BBB-Radius  # Secondary server
           - address ipv4 bbb.bbb.bbb.bbb auth-port 1812 acct-port 1813
           - key {{ radius_shared_secret }}
         match: exact
@@ -38,9 +40,9 @@
     - name: Enable AAA and configure server group
       ios_config:
         lines:
-          - aaa group server radius NPS-Radius
-          - server name AAA-Radius
-          - server name BBB-Radius
+          - aaa group server radius NPS-Radius  # Server group
+          - server name AAA-Radius  # Primary member
+          - server name BBB-Radius  # Secondary member
         match: exact
         replace: line
 

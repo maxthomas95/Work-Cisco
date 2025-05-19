@@ -1,7 +1,8 @@
 ---
+# Purpose: Verifies NTP server configurations match expected standards across Cisco devices
 - name: Check NTP Servers on Cisco NX-OS and IOS-XE Devices
   hosts: all
-  gather_facts: no
+  gather_facts: no 
   tasks:
 
     - name: Debug ansible_network_os (for troubleshooting)
@@ -10,15 +11,15 @@
 
     - name: Gather NTP configuration (NX-OS)
       cisco.nxos.nxos_command:
-        commands: "show run | include ntp"
-      register: ntp_nxos
-      when: ansible_network_os == "nxos"
+        commands: "show run | include ntp"  # NX-OS command to show NTP config
+      register: ntp_nxos  # Store output for later use
+      when: ansible_network_os == "nxos"  # Only run on NX-OS devices
 
     - name: Gather NTP configuration (IOS-XE)
       cisco.ios.ios_command:
-        commands: "show running-config | include ntp server"
-      register: ntp_ios
-      when: ansible_network_os == "ios"
+        commands: "show running-config | include ntp server"  # IOS-XE command
+      register: ntp_ios  # Store output for later use
+      when: ansible_network_os == "ios"  # Only run on IOS-XE devices
 
     - name: Extract and display NTP servers for NX-OS
       debug:
@@ -33,8 +34,8 @@
     - name: Compare NTP servers against expected list
       set_fact:
         expected_ntp_servers:
-          - "aaa.aaa.aaa.aaa"
-          - "bbb.bbb.bbb.bbb"
+          - "aaa.aaa.aaa.aaa"  # Primary NTP server
+          - "bbb.bbb.bbb.bbb"  # Secondary NTP server
 
     - name: Validate NX-OS NTP configuration
       debug:
