@@ -1,10 +1,15 @@
 # Work-Cisco Repository
 
 ## Overview
-This repository contains tools and scripts for managing Cisco Meraki networks through API integrations. The current implementation focuses on device inventory management and VPN status monitoring.
+This repository contains tools and scripts for managing Cisco networks, including:
+- Meraki cloud networks (API integrations)
+- On-premises Nexus devices (Terraform/Ansible automation)
+- BGP configuration management
 
 ## Prerequisites
-- Python 3.8+
+- Python 3.8+ (for Meraki scripts)
+- Terraform 1.0+ (for infrastructure automation)
+- Ansible 2.9+ (for network device configuration)
 - Meraki Dashboard API access
 - Azure Key Vault configured with:
   - Meraki API key
@@ -13,7 +18,7 @@ This repository contains tools and scripts for managing Cisco Meraki networks th
 
 ## Setup
 1. Clone this repository
-2. Install dependencies:
+2. Install Python dependencies:
 ```bash
 pip install -r requirements.txt
 ```
@@ -30,6 +35,14 @@ ORGANIZATION_ID=your_meraki_org_id
 ## Directory Structure
 ```
 Work-Cisco/
+├── Cisco/                # On-premises Cisco automation
+│   └── Terraform/        # Infrastructure as Code
+│       └── BGP/          # BGP configuration management
+│           ├── main.tf   # Terraform configuration
+│           ├── variables.tf
+│           ├── hosts.ini # Ansible inventory
+│           ├── nexus_bgp.yml # Ansible playbook
+│           └── README.md # Detailed BGP documentation
 ├── Meraki/               # Meraki-specific scripts
 │   ├── Meraki_GetAllDevices.py
 │   ├── Meraki_VPN_Status.py
@@ -38,8 +51,23 @@ Work-Cisco/
 └── README.md             # This file
 ```
 
+## Key Features
+- **Meraki Automation**:
+  - Device inventory management
+  - VPN status monitoring
+
+- **On-premises Automation**:
+  - BGP configuration management
+  - Infrastructure as Code deployment
+  - Network device provisioning
+
 ## Contributing
 Please follow standard Git workflow:
 1. Create a feature branch
 2. Make changes
 3. Submit a pull request
+
+For network automation changes:
+- Include Terraform plan output
+- Document Ansible playbook changes
+- Update relevant README files
