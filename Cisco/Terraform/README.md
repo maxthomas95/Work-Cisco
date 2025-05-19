@@ -4,6 +4,16 @@ This directory contains Terraform-based infrastructure automation for Cisco envi
 
 ---
 
+### ⚠️ WARNING: USE RESPONSIBLY
+
+> These scripts and tools are powerful.  
+> **Do not run in production without testing.**  
+> Always validate in a lab or limited environment first.  
+> Make sure you **understand what each script does** before executing.  
+> **Use at your own risk.**
+
+---
+
 ## 📦 Available Modules
 
 ### 🔁 BGP (Border Gateway Protocol)

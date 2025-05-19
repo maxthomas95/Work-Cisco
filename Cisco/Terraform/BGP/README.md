@@ -2,6 +2,18 @@
 
 This directory contains Terraform configurations for automating BGP peering setup on Cisco Nexus devices.
 
+---
+
+### ⚠️ WARNING: USE RESPONSIBLY
+
+> These scripts and tools are powerful.  
+> **Do not run in production without testing.**  
+> Always validate in a lab or limited environment first.  
+> Make sure you **understand what each script does** before executing.  
+> **Use at your own risk.**
+
+---
+
 ## 🧠 Architecture Overview
 
 ```mermaid

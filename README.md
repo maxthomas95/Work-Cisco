@@ -13,6 +13,16 @@ This repository contains automation tools and scripts for managing Cisco network
 
 ---
 
+### ⚠️ WARNING: USE RESPONSIBLY
+
+> These scripts and tools are powerful.  
+> **Do not run in production without testing.**  
+> Always validate in a lab or limited environment first.  
+> Make sure you **understand what each script does** before executing.  
+> **Use at your own risk.**
+
+---
+
 ## 🗺️ Overview
 
 Work-Cisco supports both **traditional Cisco infrastructure** (like Nexus switches) and **cloud-managed Meraki networks**. It includes:
